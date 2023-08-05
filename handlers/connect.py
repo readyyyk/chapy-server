@@ -38,7 +38,7 @@ def connect(url: str, hub_id: str, name: str):
             status_code=status.HTTP_400_BAD_REQUEST
         )
 
-    ws_url = url.replace("http", "ws")
+    ws_url = re.sub(r"^http", "ws", url)
     ws_url = re.sub("/[^/]+$", "/ws", ws_url)
     ws_url = ws_url + f"?name={name}"
     return JSONResponse(
