@@ -1,14 +1,14 @@
 from fastapi import WebSocket, WebSocketDisconnect, status
-from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 import json
 
 from _types.HubId import HubId
 from _types.Name import Name
 
-from models.HubsModel import hubs
-from models.HubModel import HubModel
 from models.WsMessageModel import MessageModel, ConnectionMessageModel
+from models.HubModel import HubModel
+from models.HubsModel import hubs
 
 
 async def handle_message(data: str, hub: HubModel, name: str, conn: WebSocket):
@@ -64,10 +64,13 @@ async def ws(hub_id: str, ws: WebSocket, name: str):
             status_code=status.HTTP_400_BAD_REQUEST
         )
 
-    hub: HubModel = hubs.hubs.get(hub_id)
+    if hub_id not in hubs.hubs:
+        hubs.hubs[hub_id] = HubModel(HubId(hub_id))
+    hub: HubModel = hubs.hubs[hub_id]
     # name: Name = Name(name)
 
     await hub.connect(ws, Name(name))
+    # print("\n", *hub.clients, "\n")
 
     await hub.send_exact(ws, ConnectionMessageModel("connected", name).__dict__)
     await hub.broadcast(ws, ConnectionMessageModel("connected", name).__dict__)

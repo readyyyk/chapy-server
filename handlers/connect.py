@@ -3,6 +3,8 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 import re
 
+from _consts import PROD_URL
+
 from _types.HubId import HubId
 from _types.Name import Name
 from models.HubModel import HubModel
@@ -19,10 +21,10 @@ def connect(url: str, hub_id: str, name: str):
             status_code=status.HTTP_400_BAD_REQUEST
         )
 
-    if hubs.hubs.get(hub_id) is None:
+    if hub_id not in hubs.hubs:
         hubs.hubs[hub_id] = HubModel(HubId(hub_id))
 
-    hub: HubModel = hubs.hubs.get(hub_id)
+    hub: HubModel = hubs.hubs[hub_id]
 
     try:
         Name(name)
@@ -38,7 +40,9 @@ def connect(url: str, hub_id: str, name: str):
             status_code=status.HTTP_400_BAD_REQUEST
         )
 
-    ws_url = re.sub(r"^.+:", "wss:", url)
+    ws_url = re.sub(r"^http", "ws", url)
+    if PROD_URL in url:
+        ws_url = re.sub(r"^.+://", "wss://", url)  # force wss protocol
     ws_url = re.sub("/[^/]+$", "/ws", ws_url)
     ws_url = ws_url + f"?name={name}"
     return JSONResponse(

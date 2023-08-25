@@ -5,12 +5,12 @@ from _types.Name import Name
 
 
 class HubModel:
-    id: HubId
+    id: str
     clients: Dict[str, WebSocket]
 
     def __init__(self, _id: HubId):
-        self.id = _id
-        self.clients = {}
+        self.id = str(_id)
+        self.clients = dict[str, WebSocket]()
 
     async def connect(self, ws: WebSocket, name: Name):
         await ws.accept()
