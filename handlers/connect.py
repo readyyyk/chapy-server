@@ -1,13 +1,15 @@
+import re
+import urllib.parse
 from fastapi import status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
-import re
 
 from _consts import PROD_URL
+from handlers.tokens import create
 
+from models.HubModel import HubModel
 from _types.HubId import HubId
 from _types.Name import Name
-from models.HubModel import HubModel
 
 from models.HubsModel import hubs
 
@@ -44,7 +46,9 @@ def connect(url: str, hub_id: str, name: str):
     if PROD_URL in url:
         ws_url = re.sub(r"^.+://", "wss://", url)  # force wss protocol
     ws_url = re.sub("/[^/]+$", "/ws", ws_url)
-    ws_url = ws_url + f"?name={name}"
+
+    ws_url = ws_url + f"?token={urllib.parse.quote(create(name))}"
+
     return JSONResponse(
         content=jsonable_encoder({"wsLink": ws_url}),
         status_code=status.HTTP_200_OK

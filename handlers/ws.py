@@ -1,10 +1,9 @@
-from fastapi import WebSocket, WebSocketDisconnect, status
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
+from fastapi import WebSocket, WebSocketDisconnect
 import json
 
 from _types.HubId import HubId
 from _types.Name import Name
+from handlers import tokens
 
 from models.WsMessageModel import MessageModel, ConnectionMessageModel
 from models.HubModel import HubModel
@@ -55,22 +54,31 @@ async def handle_message(data: str, hub: HubModel, name: str, conn: WebSocket):
             await hub.send_exact(conn, MessageModel("Invalid event", "server").__dict__)
 
 
-async def ws(hub_id: str, ws: WebSocket, name: str):
+async def ws(hub_id: str, ws: WebSocket, token: str):
     try:
         HubId(hub_id)
     except Exception:
-        return JSONResponse(
-            content=jsonable_encoder({"message": "Invalid hub id"}),
-            status_code=status.HTTP_400_BAD_REQUEST
-        )
+        await ws.close(reason="Invalid hub id")
+        return
 
     if hub_id not in hubs.hubs:
         hubs.hubs[hub_id] = HubModel(HubId(hub_id))
     hub: HubModel = hubs.hubs[hub_id]
-    # name: Name = Name(name)
+
+    token_data = tokens.get_payload(token)
+
+    if "error" in token_data:
+        await ws.close(reason=token_data["error"])
+        return
+
+    if token_data["id"] not in tokens.current_tokens:
+        await ws.close(reason="Token is already used!")
+        return
+
+    name = token_data["name"]
+    tokens.current_tokens.remove(token_data["id"])
 
     await hub.connect(ws, Name(name))
-    # print("\n", *hub.clients, "\n")
 
     await hub.send_exact(ws, ConnectionMessageModel("connected", name).__dict__)
     await hub.broadcast(ws, ConnectionMessageModel("connected", name).__dict__)

@@ -1,5 +1,5 @@
-from fastapi import FastAPI, WebSocket, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, WebSocket, Request
 
 from handlers.connect import connect
 from handlers.names import names
@@ -35,5 +35,5 @@ async def _names(hub: str):
 
 
 @app.websocket("/{hub}/ws")
-async def _ws(hub: str, websocket: WebSocket, name: str):
-    await ws(hub, websocket, name)
+async def _ws(hub: str, websocket: WebSocket, token: str):
+    await ws(hub, websocket, token)
