@@ -4,13 +4,20 @@ from fastapi.responses import JSONResponse
 
 from _types.HubId import HubId
 
+from models.HubsModel import hubs
+
 
 def names(hub: str):
     try:
         hub = HubId(hub)
-    except Exception:
+        return JSONResponse(
+            content=jsonable_encoder([*hubs.hubs[str(hub)].clients.keys()]),
+            status_code=status.HTTP_200_OK
+        )
+    except Exception as e:
+        print(e)
         return JSONResponse(
             content=jsonable_encoder({"message": "Invalid hub id"}),
             status_code=status.HTTP_400_BAD_REQUEST
         )
-    return f"{hub}/names"
+
