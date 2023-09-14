@@ -4,8 +4,11 @@ from fastapi import status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
+from Crypto.Cipher.AES import block_size
+
 from _consts import PROD_URL
-from handlers.tokens import create
+from handlers import tokens
+from handlers.encoding import AESCipher, get_random_string
 
 from models.HubModel import HubModel
 from _types.HubId import HubId
@@ -24,7 +27,7 @@ def connect(url: str, hub_id: str, name: str):
         )
 
     if hub_id not in hubs.hubs:
-        hubs.hubs[hub_id] = HubModel(HubId(hub_id))
+        hubs.hubs[hub_id] = HubModel(HubId(hub_id), AESCipher(get_random_string(block_size)))
 
     hub: HubModel = hubs.hubs[hub_id]
 
@@ -47,7 +50,11 @@ def connect(url: str, hub_id: str, name: str):
         ws_url = re.sub(r"^.+://", "wss://", url)  # force wss protocol
     ws_url = re.sub("/[^/]+$", "/ws", ws_url)
 
-    ws_url = ws_url + f"?token={urllib.parse.quote(create(name))}"
+    data = {
+        "name": name,
+        "key": hub.encoder.key
+    }
+    ws_url = ws_url + f"?token={urllib.parse.quote(tokens.create(data))}"
 
     return JSONResponse(
         content=jsonable_encoder({"wsLink": ws_url}),

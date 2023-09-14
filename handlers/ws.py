@@ -1,3 +1,5 @@
+import binascii
+
 from fastapi import WebSocket, WebSocketDisconnect
 import json
 
@@ -17,11 +19,23 @@ async def handle_message(data: str, hub: HubModel, name: str, conn: WebSocket):
         await hub.send_exact(conn, MessageModel("Invalid ws message", "server").__dict__)
         return
 
-    ev = message.get("event")
     try:
-        data = json.loads(message.get("data"))
-    except TypeError:
-        await hub.send_exact(conn, MessageModel("Data field was not provided", "server").__dict__)
+        print(message["data"], message["iv"])
+        decoded: str = hub.encoder.decrypt(message["data"], message["iv"]).decode("utf-8")
+        print("!!!!!!", decoded)
+        message: dict = json.loads(decoded)
+    except (binascii.Error, KeyError) as e:
+        await hub.send_exact(conn, MessageModel(f"Error parsing message: {e}", "server").__dict__)
+        return
+    except Exception as e:
+        await hub.send_exact(conn, MessageModel(f"Unhandled error: {e}", "server").__dict__)
+        return
+
+    try:
+        ev = message["event"]
+        data = json.loads(message["data"])
+    except KeyError:
+        await hub.send_exact(conn, MessageModel("Field 'data' or 'event' was not provided", "server").__dict__)
         return
     except json.decoder.JSONDecodeError:
         await hub.send_exact(conn, MessageModel("Invalid data was provided", "server").__dict__)

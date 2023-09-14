@@ -1,23 +1,22 @@
 import os
 import datetime
 import time
+from typing import Dict
 
-from dotenv import load_dotenv
 import uuid
 import jwt
 
 from _consts import JWT_LIVE_TIME
 
-load_dotenv()
 
 current_tokens = []
 
 
-def create(name: str):
+def create(data: Dict[str, str]):
     token_id = str(uuid.uuid4())
 
     jwt_payload = jwt.encode({
-        "name": name,
+        **data,
         "id": token_id,
         "exp": time.time() + datetime.timedelta(seconds=JWT_LIVE_TIME).total_seconds(),
     }, os.getenv("JWT_SECRET"))
