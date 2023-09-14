@@ -1,11 +1,13 @@
 import binascii
 
+from Crypto.Cipher.AES import block_size
 from fastapi import WebSocket, WebSocketDisconnect
 import json
 
 from _types.HubId import HubId
 from _types.Name import Name
 from handlers import tokens
+from handlers.encoding import AESCipher, get_random_string
 
 from models.WsMessageModel import MessageModel, ConnectionMessageModel
 from models.HubModel import HubModel
@@ -20,9 +22,7 @@ async def handle_message(data: str, hub: HubModel, name: str, conn: WebSocket):
         return
 
     try:
-        print(message["data"], message["iv"])
         decoded: str = hub.encoder.decrypt(message["data"], message["iv"]).decode("utf-8")
-        print("!!!!!!", decoded)
         message: dict = json.loads(decoded)
     except (binascii.Error, KeyError) as e:
         await hub.send_exact(conn, MessageModel(f"Error parsing message: {e}", "server").__dict__)
@@ -76,7 +76,7 @@ async def ws(hub_id: str, ws: WebSocket, token: str):
         return
 
     if hub_id not in hubs.hubs:
-        hubs.hubs[hub_id] = HubModel(HubId(hub_id))
+        hubs.hubs[hub_id] = HubModel(HubId(hub_id), AESCipher(get_random_string(block_size)))
     hub: HubModel = hubs.hubs[hub_id]
 
     token_data = tokens.get_payload(token)

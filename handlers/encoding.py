@@ -24,7 +24,6 @@ class AESCipher:
     def decrypt(self, enc: str, iv: str):
         enc = base64.b64decode(enc)
         iv = base64.b64decode(iv)
-        print(self.key)
         cipher = AES.new(self.key.encode('utf-8'), AES.MODE_CBC, iv=iv)
         return unpad(cipher.decrypt(enc), 16)
 
