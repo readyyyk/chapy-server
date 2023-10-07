@@ -1,4 +1,5 @@
 import binascii
+import uuid
 
 from Crypto.Cipher.AES import block_size
 from fastapi import WebSocket, WebSocketDisconnect
@@ -9,36 +10,38 @@ from _types.Name import Name
 from handlers import tokens
 from handlers.encoding import AESCipher, get_random_string
 
-from models.WsMessageModel import MessageModel, ConnectionMessageModel
+from models.WsMessageModel import MessageModel, ConnectionMessageModel, HistoryMessageModel
 from models.HubModel import HubModel
 from models.HubsModel import hubs
 
 
 async def handle_message(data: str, hub: HubModel, name: str, conn: WebSocket):
+    _id = uuid.uuid4()
+
     try:
         message: dict = json.loads(data)
     except json.decoder.JSONDecodeError:
-        await hub.send_exact(conn, MessageModel("Invalid ws message", "server").__dict__)
+        await hub.send_exact(conn, MessageModel(_id, "Invalid ws message", "server").__dict__)
         return
 
     try:
         decoded: str = hub.encoder.decrypt(message["data"], message["iv"]).decode("utf-8")
         message: dict = json.loads(decoded)
     except (binascii.Error, KeyError) as e:
-        await hub.send_exact(conn, MessageModel(f"Error parsing message: {e}", "server").__dict__)
+        await hub.send_exact(conn, MessageModel(_id, f"Error parsing message: {e}", "server").__dict__)
         return
     except Exception as e:
-        await hub.send_exact(conn, MessageModel(f"Unhandled error: {e}", "server").__dict__)
+        await hub.send_exact(conn, MessageModel(_id, f"Unhandled error: {e}", "server").__dict__)
         return
 
     try:
         ev = message["event"]
         data = json.loads(message["data"])
     except KeyError:
-        await hub.send_exact(conn, MessageModel("Field 'data' or 'event' was not provided", "server").__dict__)
+        await hub.send_exact(conn, MessageModel(_id, "Field 'data' or 'event' was not provided", "server").__dict__)
         return
     except json.decoder.JSONDecodeError:
-        await hub.send_exact(conn, MessageModel("Invalid data was provided", "server").__dict__)
+        await hub.send_exact(conn, MessageModel(_id, "Invalid data was provided", "server").__dict__)
         return
 
     match ev:
@@ -46,26 +49,28 @@ async def handle_message(data: str, hub: HubModel, name: str, conn: WebSocket):
             try:
                 match data["detail"]:
                     case "trying to connect":
-                        await hub.broadcast(conn, ConnectionMessageModel(data["detail"]).__dict__)
+                        await hub.broadcast(conn, ConnectionMessageModel(_id, data["detail"]).__dict__)
                     case "connected":
-                        await hub.send_exact(conn, ConnectionMessageModel(data["detail"], name).__dict__)
-                        await hub.broadcast(conn, ConnectionMessageModel(data["detail"], name).__dict__)
+                        await hub.send_exact(conn, ConnectionMessageModel(_id, data["detail"], name).__dict__)
+                        await hub.broadcast(conn, ConnectionMessageModel(_id, data["detail"], name).__dict__)
                     case "disconnected":
-                        await hub.broadcast(conn, ConnectionMessageModel(data["detail"], name).__dict__)
+                        await hub.broadcast(conn, ConnectionMessageModel(_id, data["detail"], name).__dict__)
                     case _:
-                        await hub.send_exact(conn, MessageModel("Invalid detail field", "server").__dict__)
+                        await hub.send_exact(conn, MessageModel(_id, "Invalid detail field", "server").__dict__)
             except KeyError:
-                await hub.send_exact(conn, MessageModel("Detail was not provided", "server").__dict__)
+                await hub.send_exact(conn, MessageModel(_id, "Detail was not provided", "server").__dict__)
                 return
         case "message":
             try:
-                await hub.send_exact(conn, MessageModel(data["text"]).__dict__)
-                await hub.broadcast(conn, MessageModel(data["text"], name).__dict__)
+                await hub.send_exact(conn, MessageModel(_id, data["text"]).__dict__)
+                await hub.broadcast(conn, MessageModel(_id, data["text"], name).__dict__)
             except KeyError:
-                await hub.send_exact(conn, MessageModel("Text was not provided", "server").__dict__)
+                await hub.send_exact(conn, MessageModel(_id, "Text was not provided", "server").__dict__)
                 return
+        case "history":
+            await hub.broadcast(conn, HistoryMessageModel(name, data).__dict__)
         case _:
-            await hub.send_exact(conn, MessageModel("Invalid event", "server").__dict__)
+            await hub.send_exact(conn, MessageModel(_id, "Invalid event", "server").__dict__)
 
 
 async def ws(hub_id: str, ws: WebSocket, token: str):
@@ -94,13 +99,16 @@ async def ws(hub_id: str, ws: WebSocket, token: str):
 
     await hub.connect(ws, Name(name))
 
-    await hub.send_exact(ws, ConnectionMessageModel("connected", name).__dict__)
-    await hub.broadcast(ws, ConnectionMessageModel("connected", name).__dict__)
+    _id = uuid.uuid4()
+
+    await hub.send_exact(ws, ConnectionMessageModel(_id, "connected", name).__dict__)
+    await hub.broadcast(ws, ConnectionMessageModel(_id, "connected", name).__dict__)
 
     try:
         while True:
             data = await ws.receive_text()
             await handle_message(data, hub, name, ws)
     except WebSocketDisconnect:
+        _id = uuid.uuid4()
         hub.disconnect(Name(name))
-        await hub.broadcast(ws, ConnectionMessageModel("disconnected", name).__dict__)
+        await hub.broadcast(ws, ConnectionMessageModel(_id, "disconnected", name).__dict__)

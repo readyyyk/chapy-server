@@ -1,9 +1,9 @@
-# fly.toml app configuration file generated for r-chapy-server on 2023-08-03T22:59:57+03:00
+# fly.toml app configuration file generated for chapy-server-beta on 2023-10-07T19:02:27+03:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = "r-chapy-server"
+app = "chapy-server-beta"
 primary_region = "arn"
 
 [build]

@@ -46,7 +46,7 @@ def connect(url: str, hub_id: str, name: str):
         )
 
     ws_url = re.sub(r"^http", "ws", url)
-    if PROD_URL in url:
+    if url in PROD_URL:
         ws_url = re.sub(r"^.+://", "wss://", url)  # force wss protocol
     ws_url = re.sub("/[^/]+$", "/ws", ws_url)
 

@@ -1,6 +1,6 @@
 from pydantic import BaseModel
-from typing import Literal
 import json
+import uuid
 
 from _consts import ALLOWED_CONNECTION_DETAILS
 from _types.Name import Name
@@ -25,7 +25,7 @@ class ConnectionMessageModel:
     event = "connection"
     data: str
 
-    def __init__(self, detail: str, name: str | None = None):
+    def __init__(self, _id: uuid.UUID, detail: str, name: str | None = None):
         self.event = "connection"
 
         data = {}
@@ -33,20 +33,20 @@ class ConnectionMessageModel:
         if detail not in ALLOWED_CONNECTION_DETAILS:
             return
 
+        data["id"] = str(_id)
         data["detail"] = detail
 
         if detail != "trying to connect":
             data["name"] = name
 
         self.data = json.dumps(data, separators=(',', ':'))
-# print(ConnectionMessageModel("trying to connect").__dict__)
 
 
 class MessageModel:
     event = "message"
     data: str
 
-    def __init__(self, text: str, sender: str | None = None):
+    def __init__(self, _id: uuid.UUID, text: str, sender: str | None = None):
         self.event = "message"
 
         data = {}
@@ -59,7 +59,22 @@ class MessageModel:
                 return
             data["sender"] = sender
 
+        data["id"] = str(_id)
         data["text"] = text
 
         self.data = json.dumps(data, separators=(',', ':'))
-# print(MessageModel("trying to connect", "asd").__dict__)
+
+
+class HistoryMessageModel:
+    event = "history"
+    data: str
+
+    def __init__(self, sender: str, data: str):
+        self.event = "history"
+
+        data = {
+            "name": sender,
+            "data": data,
+        }
+
+        self.data = json.dumps(data, separators=(',', ':'))
