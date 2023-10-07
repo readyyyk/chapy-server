@@ -1,3 +1,4 @@
+from functools import reduce
 import re
 import urllib.parse
 from fastapi import status
@@ -46,8 +47,11 @@ def connect(url: str, hub_id: str, name: str):
         )
 
     ws_url = re.sub(r"^http", "ws", url)
-    if url in PROD_URL:
-        ws_url = re.sub(r"^.+://", "wss://", url)  # force wss protocol
+
+    # force wss protocol
+    for domain in PROD_URL:
+        if domain in url != -1:
+            ws_url = re.sub(r"^.+://", "wss://", url)
     ws_url = re.sub("/[^/]+$", "/ws", ws_url)
 
     data = {
