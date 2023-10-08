@@ -32,8 +32,8 @@ async def get():
 
 
 @app.get("/{hub}/connect")
-async def _connect(request: Request, hub: str, name: str):
-    return connect(request.url._url, hub, name)
+async def _connect(request: Request, hub: str, name: str, nonce: str):
+    return connect(request.url._url, hub, name, nonce)
 
 
 @app.get("/{hub}/names")
