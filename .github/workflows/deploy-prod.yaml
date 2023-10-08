@@ -1,8 +1,11 @@
-name: Fly Deploy
+name: Fly Deploy (PROD)
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+
 jobs:
   deploy:
     name: Deploy app
