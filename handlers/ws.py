@@ -10,7 +10,10 @@ from _types.Name import Name
 from handlers import tokens
 from handlers.encoding import AESCipher, get_random_string
 
-from models.WsMessageModel import MessageModel, ConnectionMessageModel, HistoryMessageModel
+from models.WsMessageModel import (MessageModel,
+                                   ConnectionMessageModel,
+                                   HistoryMessageModel,
+                                   ActivityMessageModel)
 from models.HubModel import HubModel
 from models.HubsModel import hubs
 
@@ -69,6 +72,21 @@ async def handle_message(data: str, hub: HubModel, name: str, conn: WebSocket):
                 return
         case "history":
             await hub.broadcast(conn, HistoryMessageModel(name, data).__dict__)
+        case "activity":
+            try:
+                match data["detail"]:
+                    case "focus":
+                        await hub.broadcast(conn, ActivityMessageModel(data["sender"], data["detail"], data["value"]).__dict__)
+                        await hub.send_exact(conn, ActivityMessageModel(data["sender"], data["detail"], data["value"]).__dict__)
+                    case "typing":
+                        await hub.broadcast(conn, ActivityMessageModel(data["sender"], data["detail"]).__dict__)
+                        await hub.send_exact(conn, ActivityMessageModel(data["sender"], data["detail"]).__dict__)
+                    case _:
+                        await hub.send_exact(conn, MessageModel(_id, "Invalid detail field", "server").__dict__)
+            except KeyError:
+                await hub.send_exact(conn, MessageModel(_id, "Sender, detail or value data was provided", "server").__dict__)
+                return
+
         case _:
             await hub.send_exact(conn, MessageModel(_id, "Invalid event", "server").__dict__)
 

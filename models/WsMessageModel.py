@@ -2,7 +2,8 @@ from pydantic import BaseModel
 import json
 import uuid
 
-from _consts import ALLOWED_CONNECTION_DETAILS
+from _consts import (ALLOWED_CONNECTION_DETAILS,
+                     ALLOWED_ACTIVITY_DETAILS)
 from _types.Name import Name
 
 
@@ -75,6 +76,25 @@ class HistoryMessageModel:
         data = {
             "name": sender,
             "data": data,
+        }
+
+        self.data = json.dumps(data, separators=(',', ':'))
+
+
+class ActivityMessageModel:
+    event = "activity"
+    data: str
+
+    def __init__(self, sender: str, detail: str, value: str | None = None):
+        self.event = "activity"
+
+        if detail not in ALLOWED_ACTIVITY_DETAILS:
+            return
+
+        data = {
+            "detail": detail,
+            "sender": sender,
+            "value": value,
         }
 
         self.data = json.dumps(data, separators=(',', ':'))
