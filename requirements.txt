@@ -4,4 +4,6 @@ pydantic~=1.10.12
 fastapi~=0.100.1
 PyJWT~=2.8.0
 websockets
-uvicorn
+uvicorn~=0.20.0
+starlette~=0.27.0
+uuid~=1.30

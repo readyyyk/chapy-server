@@ -3,7 +3,7 @@
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = "chapy-server"
+app = "chapy-server-beta"
 primary_region = "arn"
 
 [build]

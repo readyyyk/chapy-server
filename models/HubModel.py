@@ -1,6 +1,9 @@
 import json
 from typing import Dict
 from fastapi import WebSocket
+from starlette.websockets import WebSocketState
+from websockets.exceptions import ConnectionClosedError
+
 from _types.HubId import HubId
 from _types.Name import Name
 from handlers.encoding import AESCipher
@@ -25,7 +28,10 @@ class HubModel:
 
     async def send_exact(self, ws: WebSocket, message: dict):
         data, iv = self.encoder.encrypt(json.dumps(message))
-        await ws.send_json({"data": data.decode("utf-8"), "iv": iv})
+        try:
+            await ws.send_json({"data": data.decode("utf-8"), "iv": iv})
+        except ConnectionClosedError:
+            print("Tried to `send exact` to closed socket")
 
     async def broadcast(self, sender: WebSocket, message: dict):
         data, iv = self.encoder.encrypt(json.dumps(message))
