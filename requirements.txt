@@ -1,6 +1,6 @@
 python-dotenv~=0.13.0
 pycryptodome~=3.18.0
-pydantic~=1.10.12
+pydantic~=2.4.0
 fastapi~=0.100.1
 PyJWT~=2.8.0
 websockets
