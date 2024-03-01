@@ -35,7 +35,13 @@ class HubModel:
 
     async def broadcast(self, sender: WebSocket, message: dict):
         data, iv = self.encoder.encrypt(json.dumps(message))
-        for ws in self.clients.values():
+        for name in self.clients.keys():
+            ws = self.clients[name]
             if ws == sender:
                 continue
-            await ws.send_json({"data": data.decode("utf-8"), "iv": iv})
+            try:
+                await ws.send_json({"data": data.decode("utf-8"), "iv": iv})
+            except Exception as e:
+                print(e)
+                print("Tried to `broadcast` to closed socket")
+                self.disconnect(Name(name))

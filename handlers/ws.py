@@ -84,7 +84,8 @@ async def handle_message(data: str, hub: HubModel, name: str, conn: WebSocket):
                     case _:
                         await hub.send_exact(conn, MessageModel(_id, "Invalid detail field", "server").__dict__)
             except KeyError:
-                await hub.send_exact(conn, MessageModel(_id, "Sender, detail or value data was provided", "server").__dict__)
+                print("Sender, detail or value data was provided")
+                # await hub.send_exact(conn, MessageModel(_id, "Sender, detail or value data was provided", "server").__dict__)
                 return
 
         case _:
