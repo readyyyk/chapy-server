@@ -1,4 +1,4 @@
-FROM python:3.11-slim-bullseye
+FROM python:3.12.7-slim-bullseye
 
 ENV PYTHONUNBUFFERED True
 WORKDIR /app
